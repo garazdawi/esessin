@@ -1,0 +1,12 @@
+{application, sip_transcoder,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { sip_transcoder_app, []}},
+  {env, []}
+ ]}.
