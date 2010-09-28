@@ -142,6 +142,7 @@ struct fcgi_head {
     /* char padding[paddingLength] */
 };
 int packet_parse_http(const char*, int, int*, PacketCallbacks*, void*);
+int packet_parse_sip(const char*, int, int*, PacketCallbacks*, void*);
 int packet_parse_ssl(const char*, int, PacketCallbacks*, void*);
 
 
