@@ -10,7 +10,7 @@ decode_test_() ->
      fun ?MODULE:two_in_one/0].
 
 simple_invite() ->
-    {ok, O, <<>>} = esessin:decode(
+    {ok, O, Rest} = esessin:decode(
 		      <<"INVITE sip:bob@biloxi.com SIP/2.0\n"
 		       "Via: SIP/2.0/UDP pc33.atlanta.com;branch=z9hG4bK776asdhds\n"
 		       "Max-Forwards: 70\n"
@@ -50,7 +50,8 @@ simple_invite() ->
 		  {'Content-Length',<<"7">>}],
 		 stq:headers(O)),
 
-    ?assertEqual(<<"Test: 1\n\n">>, stq:body(O)).
+    ?assertEqual(<<"Test: 1">>, stq:body(O)),
+    ?assertEqual(<<"\n\n">>, Rest).
 
 more() ->
     ok.

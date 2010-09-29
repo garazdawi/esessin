@@ -69,8 +69,16 @@ parse(Bin, #state{ state = header, headers = Headers } = State) ->
 	{error, Reason} ->
 	    error(Reason, [Bin, State])
     end;
-parse(Body, State) ->
-    {ok, stq:body(Body, State#state.stq), <<>>}.
+parse(Msg, #state{ state = body, stq = Stq } = State) ->
+    case list_to_integer(binary_to_list(stq:header('Content-Length', Stq))) of
+	Length ->
+	    case Msg of
+		<<Body:Length/binary, Rest/binary>> ->
+		    {ok, stq:body(Body, State#state.stq), Rest};
+		Msg ->
+		    {more, State#state{ buffer = Msg } }
+	    end
+    end.
 
 set_opts(State, [{body_parser, Parser} | Rest]) ->
     set_opts(State#state{ body_parser = Parser }, Rest);

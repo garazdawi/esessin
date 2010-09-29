@@ -1,12 +1,11 @@
-{application, sip_transcoder,
+{application, esessin,
  [
-  {description, ""},
-  {vsn, "1"},
+  {description, "A lethal SIP Encoder/Decoder"},
+  {vsn, "0.1"},
   {registered, []},
   {applications, [
                   kernel,
                   stdlib
                  ]},
-  {mod, { sip_transcoder_app, []}},
   {env, []}
  ]}.
