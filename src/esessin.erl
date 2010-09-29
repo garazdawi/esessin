@@ -46,6 +46,8 @@ parse(Bin, #state{ state = undefined } = State) ->
 	    parse(Rest, State#state{ state = header,
 				     headers = [],
 				     stq = stq:new(Code, Msg, Vsn) });
+	{ok, {sip_error, <<"\n">>}, Rest} ->
+	    parse(Rest, State);
 	{ok, {sip_error, _Line}, Rest} ->
 	    parse(Rest, State);
 	{more, _HowMuch} ->
@@ -58,6 +60,7 @@ parse(Bin, #state{ state = header, headers = Headers } = State) ->
 	{ok, {sip_header, _, Field, _, Value}, Rest} ->
 	    parse(Rest, State#state{ headers = [{Field, Value} | Headers]});
 	{ok, {sip_error, _Line}, Rest} ->
+	    % TODO: Add config for failing here
 	    parse(Rest, State);
 	{ok, sip_eoh, Body} ->
 	    parse(Body, State#state{
