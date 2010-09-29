@@ -46,6 +46,7 @@ parse_packet(Bin, Opts) ->
 parse_header(Data, _Opts) ->
     case erlang:decode_packet(httph_bin, Data, []) of
 	{ok, {http_header, Code, Field, Unused, Value}, Rest} ->
+	    % TODO: Strip \t(\r)\n sequences, see RFC 3261 § 7.3.1
 	    {ok, {sip_header, Code, Field, Unused, Value}, Rest};
 	{ok, http_eoh, Rest} ->
 	    {ok, sip_eoh, Rest};
@@ -58,7 +59,7 @@ parse_header(Data, _Opts) ->
 %% --------------------------------------------------------------------------
 %% Internal Functions
 %% --------------------------------------------------------------------------
-parse_line(Line, Opts) ->
+parse_line(Line, _Opts) ->
     case binary:split(Line, <<" ">>,[global]) of
 	[<<"SIP",_/binary>> = Vsn, Code, Msg] ->
 	    {sip_response, parse_vsn(Vsn), parse_code(Code), Msg};
