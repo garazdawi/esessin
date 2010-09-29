@@ -80,8 +80,8 @@ parse_method(<<"OPTION">>) ->
     option;
 parse_method(<<"REGISTER">>) ->
     register;
-parse_method(_Else) ->
-    throw(could_not_parse).
+parse_method(Method) ->
+    throw(Method).
 
 
 parse_vsn(<<"SIP/", Vsn/binary>>) ->
