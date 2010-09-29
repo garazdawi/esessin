@@ -82,7 +82,7 @@ parse_method(<<"OPTION">>) ->
 parse_method(<<"REGISTER">>) ->
     register;
 parse_method(Method) ->
-    throw(Method).
+    Method.
 
 
 parse_vsn(<<"SIP/", Vsn/binary>>) ->
