@@ -1,6 +1,10 @@
 %% @author Lukas Larsson <garazdawi@gmail.com>
 %% @copyright 2010
 
+%% TODO: Figure out how to handle SIP compact form headers, see RFC 3261 §7.3.1
+%% TODO: Figure out how to handle multi headers, see RFC 3261 §7.3.1
+%%       (i.e. Route: a,b vs Route: a\r\nRoute:b )
+
 -module(esessin).
 
 -include("stq.hrl").
@@ -49,6 +53,7 @@ parse(Bin, #state{ state = undefined } = State) ->
 	{ok, {sip_error, <<"\n">>}, Rest} ->
 	    parse(Rest, State);
 	{ok, {sip_error, _Line}, Rest} ->
+	    % TODO: Add config for failing here
 	    parse(Rest, State);
 	{more, _HowMuch} ->
 	    {more, State#state{ buffer = Bin }};
