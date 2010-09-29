@@ -5,16 +5,36 @@
 
 -include("stq.hrl").
 
--export([decode/3, encode/2]).
+-record( stq_msg, { method, uri, vsn, headers, body}).
 
-%% @doc Decode a SIP binary to a STQ data structure
--spec decode(binary(), Opaque :: term(), Opts :: proplist()) ->
-    {more, Opaque :: term()} | {ok, Data :: stq_opaque(), Rest :: binary()}.
-decode(Bin, undefined, Opts) ->
-    {ok, Bin, <<>>}.
+-define(getter(Name), Name(#stq_msg{ Name = Value }) -> Value).
+-define(setter(Name), Name(Value, StqMsg) -> StqMsg#stq_msg{ Name = Value }).
 
-%% @doc Encode a STQ data structure to a SIP binary
--spec encode(Data :: stq_opaque(), Opts :: proplist()) ->
-    binary().
-encode(Data, Opts) ->
-    Data.
+-export([new/3]).
+-export([method/1, method/2]).
+-export([uri/1, uri/2]).
+-export([vsn/1, vsn/2]).
+-export([header_fields/1]).
+-export([headers/1, headers/2]).
+-export([body/1, body/2]).
+-export([header/2]).
+
+new(Method, Uri, Vsn) ->
+    #stq_msg{ method = Method, uri = Uri, vsn = Vsn }.
+
+?getter(method).
+?setter(method).
+?getter(uri).
+?setter(uri).
+?getter(vsn).
+?setter(vsn).
+?getter(headers).
+?setter(headers).
+?getter(body).
+?setter(body).
+
+header_fields(#stq_msg{ headers = Headers }) ->
+    [Field || {Field, _Value} <- Headers].
+
+header(Header, #stq_msg{ headers = Headers }) ->
+    proplists:get_value(Header, Headers).

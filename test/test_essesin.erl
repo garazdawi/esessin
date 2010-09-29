@@ -1,4 +1,4 @@
--module(test_sip_transcoder).
+-module(test_essesin).
 
 -compile(export_all).
 
@@ -10,7 +10,7 @@ decode_test_() ->
      fun ?MODULE:two_in_one/0].
 
 simple_invite() ->
-    {ok, O, <<>>} = sip_transcoder:decode(
+    {ok, O, <<>>} = esessin:decode(
 		      <<"INVITE sip:bob@biloxi.com SIP/2.0\n"
 		       "Via: SIP/2.0/UDP pc33.atlanta.com;branch=z9hG4bK776asdhds\n"
 		       "Max-Forwards: 70\n"
@@ -21,23 +21,23 @@ simple_invite() ->
 		       "Contact: <sip:alice@pc33.atlanta.com>\n"
 		       "Content-Type: application/sdp\n"
 		       "Content-Length: 7\n\n"
-		       "Test: 1\n\n">>, undefined, []),
+		       "Test: 1\n\n">>, []),
     io:format("Opaque = ~p~n",[O]),
     ?assertEqual(invite,stq:method(O)),
-    ?assertEqual({sip, <<"bob@biloxi.com">>},stq:uri(O)),
-    ?assertEqual(<<"SIP/2.0">>, stq:vsn(O)),
+    ?assertEqual(<<"sip:bob@biloxi.com">>,stq:uri(O)),
+    ?assertEqual({2,0}, stq:vsn(O)),
     ?assertEqual(['Via','Max-Forwards', <<"To">>, 'From', <<"Call-Id">>,
 		  <<"Cseq">>,<<"Contact">>,'Content-Type','Content-Length'],
 		 stq:header_fields(O)),
-    ?assertEqual(<<"SIP/2.0/UDP pc33.atlanta.com;branch=z9hG4bK776asdhds">>,stq:header(O,'Via')),
-    ?assertEqual(<<"70">>, stq:header(O, 'Max-Forwards')),
-    ?assertEqual(<<"Bob <sip:bob@biloxi.com>">>, stq:header(O, <<"To">>)),
-    ?assertEqual(<<"Alice <sip:alice@atlanta.com>;tag=1928301774">>, stq:header(O, 'From')),
-    ?assertEqual(<<"a84b4c76e66710@pc33.atlanta.com">>, stq:header(O, <<"Call-Id">>)),
-    ?assertEqual(<<"314159 INVITE">>, stq:header(O, <<"Cseq">>)),
-    ?assertEqual(<<"<sip:alice@pc33.atlanta.com>">>, stq:header(O, <<"Contact">>)),
-    ?assertEqual(<<"application/sdp">>, stq:header(O, 'Content-Type')),
-    ?assertEqual(<<"7">>, stq:header(O, 'Content-Length')),
+    ?assertEqual(<<"SIP/2.0/UDP pc33.atlanta.com;branch=z9hG4bK776asdhds">>,stq:header('Via',O)),
+    ?assertEqual(<<"70">>, stq:header('Max-Forwards',O)),
+    ?assertEqual(<<"Bob <sip:bob@biloxi.com>">>, stq:header(<<"To">>,O)),
+    ?assertEqual(<<"Alice <sip:alice@atlanta.com>;tag=1928301774">>, stq:header('From',O)),
+    ?assertEqual(<<"a84b4c76e66710@pc33.atlanta.com">>, stq:header(<<"Call-Id">>,O)),
+    ?assertEqual(<<"314159 INVITE">>, stq:header(<<"Cseq">>, O)),
+    ?assertEqual(<<"<sip:alice@pc33.atlanta.com>">>, stq:header(<<"Contact">>, O)),
+    ?assertEqual(<<"application/sdp">>, stq:header('Content-Type', O)),
+    ?assertEqual(<<"7">>, stq:header('Content-Length', O)),
 
     ?assertEqual([{'Via',<<"SIP/2.0/UDP pc33.atlanta.com;branch=z9hG4bK776asdhds">>},
 		  {'Max-Forwards',<<"70">>},
@@ -50,7 +50,7 @@ simple_invite() ->
 		  {'Content-Length',<<"7">>}],
 		 stq:headers(O)),
 
-    ?assertEqual(<<"Test: 1\n\n">>, stq:sdp(O)).
+    ?assertEqual(<<"Test: 1\n\n">>, stq:body(O)).
 
 more() ->
     ok.
