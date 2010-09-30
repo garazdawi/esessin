@@ -58,7 +58,7 @@ parse(Bin, #state{ state = undefined } = State) ->
 	{more, _HowMuch} ->
 	    {more, State#state{ buffer = Bin }};
 	{error, Reason} ->
-	    error(Reason, [Bin, State])
+	    erlang:error(Reason, [Bin, State])
     end;
 parse(Bin, #state{ state = header, headers = Headers } = State) ->
     case esi_parser:parse_header(Bin, []) of
@@ -75,7 +75,7 @@ parse(Bin, #state{ state = header, headers = Headers } = State) ->
 	{more, _HowMuch} ->
 	    {more, State#state{ buffer = Bin } };
 	{error, Reason} ->
-	    error(Reason, [Bin, State])
+	    erlang:error(Reason, [Bin, State])
     end;
 parse(Msg, #state{ state = body, stq = Stq } = State) ->
     case list_to_integer(binary_to_list(stq:header('Content-Length', Stq))) of
