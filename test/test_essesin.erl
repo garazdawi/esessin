@@ -5,11 +5,36 @@
 -include_lib("eunit/include/eunit.hrl").
 
 decode_test_() ->
-    [fun ?MODULE:simple_invite/0,
-     fun ?MODULE:more/0,
-     fun ?MODULE:two_in_one/0].
+     [fun ?MODULE:simple_invite/0,
+      fun ?MODULE:more/0,
+      fun ?MODULE:two_in_one/0,
+      fun ?MODULE:complex_invite/0].
 
 simple_invite() ->
+    {ok, O, Rest} = esessin:decode(<<"INVITE sip:lukas@localhost SIP/1.0\r\n"
+                                    "Content-Type: application/sdp\r\n"
+                                    "Content-Length: 0\r\n\r\n">>, []),
+
+    io:format("Opaque = ~p~n",[O]),
+
+    ?assertEqual(invite, stq:method(O)),
+    ?assertEqual(<<"sip:lukas@localhost">>, stq:uri(O)),
+    ?assertEqual({1,0}, stq:vsn(O)),
+    ?assertEqual(['Content-Type','Content-Length'], stq:header_fields(O)),
+    ?assertEqual([{'Content-Type',<<"application/sdp">>},
+                  {'Content-Length',<<"0">>}], stq:headers(O)),
+    ?assertEqual(<<>>, Rest).
+    
+
+
+more() ->
+    ok.
+
+two_in_one() ->
+    ok.
+
+
+complex_invite() ->
     {ok, O, Rest} = esessin:decode(
 		      <<"INVITE sip:bob@biloxi.com SIP/2.0\n"
 		       "Via: SIP/2.0/UDP pc33.atlanta.com;branch=z9hG4bK776asdhds\n"
@@ -52,9 +77,3 @@ simple_invite() ->
 
     ?assertEqual(<<"Test: 1">>, stq:body(O)),
     ?assertEqual(<<"\n\n">>, Rest).
-
-more() ->
-    ok.
-
-two_in_one() ->
-    ok.

@@ -27,7 +27,7 @@
     {ok, sip_request() | sip_response() | sip_error(), Rest :: binary()} |
     {error, Reason :: term()}.
 parse_packet(Bin, Opts) ->
-    case binary:split(Bin, <<"\n">>) of
+    case binary:split(Bin, [<<"\n">>,<<"\r\n">>]) of
 	[Line, Rest] ->
 	    try
 		{ok, parse_line(Line, Opts), Rest}
