@@ -23,16 +23,59 @@ simple_invite() ->
     ?assertEqual(['Content-Type','Content-Length'], stq:header_fields(O)),
     ?assertEqual([{'Content-Type',<<"application/sdp">>},
                   {'Content-Length',<<"0">>}], stq:headers(O)),
+    ?assertEqual(<<>>, stq:body(O)),
     ?assertEqual(<<>>, Rest).
-    
-
 
 more() ->
-    ok.
+    {more, O1} = esessin:decode(<<"INVITE sip:lukas@localhost SIP/1.0\r\n"
+                                 "Content-Type: applic">>, []),
+    io:format("Opaque State = ~p~n", [O1]),
+    
+    {ok, O, Rest} = esessin:decode(<<"ation/sdp\r\n"
+                                    "Content-Length: 0\r\n\r\n">>, O1),
+    io:format("Opaque Data = ~p~n", [O]),
+    
+    ?assertEqual(invite, stq:method(O)),
+    ?assertEqual(<<"sip:lukas@localhost">>, stq:uri(O)),
+    ?assertEqual({1,0}, stq:vsn(O)),
+    ?assertEqual(['Content-Type','Content-Length'], stq:header_fields(O)),
+    ?assertEqual([{'Content-Type',<<"application/sdp">>},
+                  {'Content-Length',<<"0">>}], stq:headers(O)),
+    ?assertEqual(<<>>, stq:body(O)),
+    ?assertEqual(<<>>, Rest).
 
 two_in_one() ->
-    ok.
+    {ok, O, Rest} = esessin:decode(<<"INVITE sip:lukas@localhost SIP/1.0\r\n"
+                                    "Content-Type: application/sdp\r\n"
+                                    "Content-Length: 0\r\n\r\n"
+                                    "INVITE sip:lukas@localhost SIP/1.0\r\n"
+                                    "Content-Type: application/sdp\r\n"
+                                    "Content-Length: 0\r\n\r\n">>, []),
 
+    io:format("Opaque = ~p~n",[O]),
+
+    ?assertEqual(invite, stq:method(O)),
+    ?assertEqual(<<"sip:lukas@localhost">>, stq:uri(O)),
+    ?assertEqual({1,0}, stq:vsn(O)),
+    ?assertEqual(['Content-Type','Content-Length'], stq:header_fields(O)),
+    ?assertEqual([{'Content-Type',<<"application/sdp">>},
+                  {'Content-Length',<<"0">>}], stq:headers(O)),
+
+    ?assertEqual(<<>>, stq:body(O)),
+
+    {ok, O1, Rest1} = esessin:decode(Rest, []),
+
+    io:format("Opaque1 = ~p~n",[O1]),
+
+    ?assertEqual(invite, stq:method(O1)),
+    ?assertEqual(<<"sip:lukas@localhost">>, stq:uri(O1)),
+    ?assertEqual({1,0}, stq:vsn(O1)),
+    ?assertEqual(['Content-Type','Content-Length'], stq:header_fields(O1)),
+    ?assertEqual([{'Content-Type',<<"application/sdp">>},
+                  {'Content-Length',<<"0">>}], stq:headers(O1)),
+    ?assertEqual(<<>>, stq:body(O1)),
+    ?assertEqual(<<>>, Rest1).
+    
 
 complex_invite() ->
     {ok, O, Rest} = esessin:decode(
