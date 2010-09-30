@@ -59,6 +59,8 @@ parse_header(Data, _Opts) ->
 %% --------------------------------------------------------------------------
 %% Internal Functions
 %% --------------------------------------------------------------------------
+parse_line(<<>>, _Opts) ->
+    throw(could_not_parse);
 parse_line(Line, _Opts) ->
     case binary:split(Line, <<" ">>,[global]) of
 	[<<"SIP",_/binary>> = Vsn, Code, Msg] ->
