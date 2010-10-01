@@ -50,7 +50,8 @@ parse(Bin, #state{ state = undefined } = State) ->
 	    parse(Rest, State#state{ state = header,
 				     headers = [],
 				     stq = stq:new(Code, Msg, Vsn) });
-	{ok, {sip_error, <<"\n">>}, Rest} ->
+	{ok, {sip_error, Line}, Rest}
+	  when Line =:= <<"\r\n">>; Line =:= <<"\n">> ->
 	    parse(Rest, State);
 	{ok, {sip_error, _Line}, Rest} ->
 	    % TODO: Add config for failing here
