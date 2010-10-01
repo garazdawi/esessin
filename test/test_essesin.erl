@@ -5,19 +5,31 @@
 -include_lib("eunit/include/eunit.hrl").
 
 decode_test_() ->
-     [fun ?MODULE:simple_invite/0,
-      fun ?MODULE:more/0,
-      fun ?MODULE:two_in_one/0,
-      fun ?MODULE:complex_invite/0].
+     method_decode() ++
+      [fun ?MODULE:more/0,
+       fun ?MODULE:two_in_one/0,
+       fun ?MODULE:complex_invite/0].
 
-simple_invite() ->
-    {ok, O, Rest} = esessin:decode(<<"INVITE sip:lukas@localhost SIP/1.0\r\n"
+method_decode() ->
+    [{binary_to_list(Method), ?_test(simple_decode(Exp, Method))} ||
+	{Exp, Method} <- [{invite, <<"INVITE">>},
+			  {bye, <<"BYE">>},
+			  {option, <<"OPTION">>},
+			  {register, <<"REGISTER">>},
+			  {register, <<"rEgIsTeR">>},
+			  {ack, <<"ACK">>},
+			  {cancel, <<"CANCEL">>},
+			  {<<"test">>,<<"TEST">>}]].
+
+simple_decode(Exp, Method) ->
+    {ok, O, Rest} = esessin:decode(<<Method/binary,
+				    " sip:lukas@localhost SIP/1.0\r\n"
                                     "Content-Type: application/sdp\r\n"
                                     "Content-Length: 0\r\n\r\n">>, []),
 
     io:format("Opaque = ~p~n",[O]),
 
-    ?assertEqual(invite, stq:method(O)),
+    ?assertEqual(Exp, stq:method(O)),
     ?assertEqual(<<"sip:lukas@localhost">>, stq:uri(O)),
     ?assertEqual({1,0}, stq:vsn(O)),
     ?assertEqual(['Content-Type','Content-Length'], stq:header_fields(O)),
