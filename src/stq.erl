@@ -69,11 +69,11 @@ header_fields(#stq_req{ headers = Headers }) ->
 header_fields(#stq_res{ headers = Headers }) ->
     [Field || {Field, _Value} <- Headers].
 
--spec header( sip_header_field(), stq_opaque()) -> sip_header().
+-spec header( sip_header_field(), stq_opaque()) -> list(sip_header()).
 header(Header, #stq_req{ headers = Headers }) ->
-    proplists:get_value(Header, Headers);
+    [V || {H, V} <- Headers, Header =:= H];
 header(Header, #stq_res{ headers = Headers }) ->
-    proplists:get_value(Header, Headers).
+    [V || {H, V} <- Headers, Header =:= H].
 
 %% -----------------------------------------------------------------------------
 %% API
