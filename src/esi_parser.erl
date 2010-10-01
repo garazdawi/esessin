@@ -30,7 +30,7 @@ parse_packet(Bin, Opts) ->
     case binary:split(Bin, [<<"\n">>,<<"\r\n">>]) of
 	[Line, Rest] ->
 	    try
-		{ok, parse_line(Line, Opts), Rest}
+		{ok, parse_line(bstring:to_lower(Line), Opts), Rest}
 	    catch throw:could_not_parse ->
 		    {ok, {sip_error, <<Line/binary, "\n">>}, Rest}
 	    end;
@@ -63,7 +63,7 @@ parse_line(<<>>, _Opts) ->
     throw(could_not_parse);
 parse_line(Line, _Opts) ->
     case binary:split(Line, <<" ">>,[global]) of
-	[<<"SIP",_/binary>> = Vsn, Code, Msg] ->
+	[<<"sip",_/binary>> = Vsn, Code, Msg] ->
 	    {sip_response, parse_vsn(Vsn), parse_code(Code), Msg};
 	[Method, Uri, Vsn] ->
 	    {sip_request, parse_method(Method), parse_uri(Uri), parse_vsn(Vsn)};
@@ -71,23 +71,23 @@ parse_line(Line, _Opts) ->
 	    throw(could_not_parse)
     end.
 
-parse_method(<<"INVITE">>) ->
+parse_method(<<"invite">>) ->
     invite;
-parse_method(<<"ACK">>) ->
+parse_method(<<"ack">>) ->
     ack;
-parse_method(<<"BYE">>) ->
+parse_method(<<"bye">>) ->
     bye;
-parse_method(<<"CANCEL">>) ->
+parse_method(<<"cancel">>) ->
     cancel;
-parse_method(<<"OPTION">>) ->
+parse_method(<<"option">>) ->
     option;
-parse_method(<<"REGISTER">>) ->
+parse_method(<<"register">>) ->
     register;
 parse_method(Method) ->
     Method.
 
 
-parse_vsn(<<"SIP/", Vsn/binary>>) ->
+parse_vsn(<<"sip/", Vsn/binary>>) ->
     case binary:split(Vsn, <<".">>,[global]) of
 	[Major, Minor] ->
 	    try
