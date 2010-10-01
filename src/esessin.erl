@@ -15,6 +15,7 @@
 		 headers :: list(),
 		 buffer = <<>> :: binary(),
 		 body_parser = esi_body_binary,
+		 on_parse_error = ignore_line,
 		 stq :: stq_opaque() }).
 
 %% --------------------------------------------------------------------------
@@ -53,9 +54,16 @@ parse(Bin, #state{ state = undefined } = State) ->
 	{ok, {sip_error, Line}, Rest}
 	  when Line =:= <<"\r\n">>; Line =:= <<"\n">> ->
 	    parse(Rest, State);
-	{ok, {sip_error, _Line}, Rest} ->
-	    % TODO: Add config for failing here
+	{ok, {sip_error, Line}, Rest}
+	  when  State#state.on_parse_error =:= fail ->
+	    erlang:error({parse_failed, Line, Rest},[Bin, State]);
+	{ok, {sip_error, _Line}, Rest}
+	  when  State#state.on_parse_error =:= ignore ->
 	    parse(Rest, State);
+	{ok, {sip_error, Line}, Rest}
+	  when  is_function(State#state.on_parse_error) ->
+	    NewRest = (State#state.on_parse_error)(Line, Rest),
+	    parse(NewRest, State);
 	{more, _HowMuch} ->
 	    {more, State#state{ buffer = Bin }};
 	{error, Reason} ->
@@ -65,9 +73,16 @@ parse(Bin, #state{ state = header, headers = Headers } = State) ->
     case esi_parser:parse_header(Bin, []) of
 	{ok, {sip_header, _, Field, _, Value}, Rest} ->
 	    parse(Rest, State#state{ headers = [{Field, Value} | Headers]});
-	{ok, {sip_error, _Line}, Rest} ->
-	    % TODO: Add config for failing here
+	{ok, {sip_error, Line}, Rest}
+	  when State#state.on_parse_error =:= fail ->
+	    erlang:error({parse_failed, Line, Rest},[Bin, State]);
+	{ok, {sip_error, _Line}, Rest}
+	  when State#state.on_parse_error =:= ignore ->
 	    parse(Rest, State);
+	{ok, {sip_error, Line}, Rest}
+	  when  is_function(State#state.on_parse_error) ->
+	    NewRest = (State#state.on_parse_error)(Line, Rest),
+	    parse(NewRest, State);
 	{ok, sip_eoh, Body} ->
 	    parse(Body, State#state{
 			  state = body,
@@ -93,5 +108,7 @@ parse(Msg, #state{ state = body, stq = Stq } = State) ->
 
 set_opts(State, [{body_parser, Parser} | Rest]) ->
     set_opts(State#state{ body_parser = Parser }, Rest);
+set_opts(State, [{on_parse_error, Action} | Rest]) ->
+    set_opts(State#state{ on_parse_error = Action }, Rest);
 set_opts(State, []) ->
     State.
