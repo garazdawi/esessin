@@ -43,67 +43,67 @@ encode(Data, _Opts) ->
 
 parse(Bin, #state{ state = undefined } = State) ->
     case esi_parser:parse_packet(Bin, []) of
-	{ok, {sip_request, Method, Uri, Vsn}, Rest} ->
-	    parse(Rest, State#state{ state = header,
-				     headers = [],
-				     stq = stq:new(Method, Uri, Vsn) });
-	{ok, {sip_response, Vsn, Code, Msg}, Rest} ->
-	    parse(Rest, State#state{ state = header,
-				     headers = [],
-				     stq = stq:new(Code, Msg, Vsn) });
-	{ok, {sip_error, Line}, Rest}
-	  when Line =:= <<"\r\n">>; Line =:= <<"\n">> ->
-	    parse(Rest, State);
-	{ok, {sip_error, Line}, Rest}
-	  when  State#state.on_parse_error =:= fail ->
-	    erlang:error({parse_failed, Line, Rest},[Bin, State]);
-	{ok, {sip_error, _Line}, Rest}
-	  when  State#state.on_parse_error =:= ignore ->
-	    parse(Rest, State);
-	{ok, {sip_error, Line}, Rest}
-	  when  is_function(State#state.on_parse_error) ->
-	    NewRest = (State#state.on_parse_error)(Line, Rest),
-	    parse(NewRest, State);
-	{more, _HowMuch} ->
-	    {more, State#state{ buffer = Bin }};
-	{error, Reason} ->
-	    erlang:error(Reason, [Bin, State])
+        {ok, {sip_request, Method, Uri, Vsn}, Rest} ->
+            parse(Rest, State#state{ state = header,
+                                     headers = [],
+                                     stq = stq:new(Method, Uri, Vsn) });
+        {ok, {sip_response, Vsn, Code, Msg}, Rest} ->
+            parse(Rest, State#state{ state = header,
+                                     headers = [],
+                                     stq = stq:new(Code, Msg, Vsn) });
+        {ok, {sip_error, Line}, Rest}
+        when Line =:= <<"\r\n">>; Line =:= <<"\n">> ->
+            parse(Rest, State);
+        {ok, {sip_error, Line}, Rest}
+        when  State#state.on_parse_error =:= fail ->
+            erlang:error({parse_failed, Line, Rest},[Bin, State]);
+        {ok, {sip_error, _Line}, Rest}
+        when  State#state.on_parse_error =:= ignore ->
+            parse(Rest, State);
+        {ok, {sip_error, Line}, Rest}
+        when  is_function(State#state.on_parse_error) ->
+            NewRest = (State#state.on_parse_error)(Line, Rest),
+            parse(NewRest, State);
+        {more, _HowMuch} ->
+            {more, State#state{ buffer = Bin }};
+        {error, Reason} ->
+            erlang:error(Reason, [Bin, State])
     end;
 parse(Bin, #state{ state = header, headers = Headers } = State) ->
     case esi_parser:parse_header(Bin, []) of
-	{ok, {sip_header, _, Field, _, Value}, Rest} ->
-	    parse(Rest, State#state{ headers = [{Field, Value} | Headers]});
-	{ok, {sip_error, Line}, Rest}
-	  when State#state.on_parse_error =:= fail ->
-	    erlang:error({parse_failed, Line, Rest},[Bin, State]);
-	{ok, {sip_error, _Line}, Rest}
-	  when State#state.on_parse_error =:= ignore ->
-	    parse(Rest, State);
-	{ok, {sip_error, Line}, Rest}
-	  when  is_function(State#state.on_parse_error) ->
-	    NewRest = (State#state.on_parse_error)(Line, Rest),
-	    parse(NewRest, State);
-	{ok, sip_eoh, Body} ->
-	    parse(Body, State#state{
-			  state = body,
-			  stq = stq:headers(lists:reverse(Headers),
-					    State#state.stq) });
-	{more, _HowMuch} ->
-	    {more, State#state{ buffer = Bin } };
-	{error, Reason} ->
-	    erlang:error(Reason, [Bin, State])
+        {ok, {sip_header, _, Field, _, Value}, Rest} ->
+            parse(Rest, State#state{ headers = [{Field, Value} | Headers]});
+        {ok, {sip_error, Line}, Rest}
+        when State#state.on_parse_error =:= fail ->
+            erlang:error({parse_failed, Line, Rest},[Bin, State]);
+        {ok, {sip_error, _Line}, Rest}
+        when State#state.on_parse_error =:= ignore ->
+            parse(Rest, State);
+        {ok, {sip_error, Line}, Rest}
+        when  is_function(State#state.on_parse_error) ->
+            NewRest = (State#state.on_parse_error)(Line, Rest),
+            parse(NewRest, State);
+        {ok, sip_eoh, Body} ->
+            parse(Body, State#state{
+                          state = body,
+                          stq = stq:headers(lists:reverse(Headers),
+                                            State#state.stq) });
+        {more, _HowMuch} ->
+            {more, State#state{ buffer = Bin } };
+        {error, Reason} ->
+            erlang:error(Reason, [Bin, State])
     end;
 parse(Msg, #state{ state = body, stq = Stq } = State) ->
     case list_to_integer(
-	   binary_to_list(
-	     hd(stq:header('Content-Length', Stq)))) of
-	Length ->
-	    case Msg of
-		<<Body:Length/binary, Rest/binary>> ->
-		    {ok, stq:body(Body, State#state.stq), Rest};
-		Msg ->
-		    {more, State#state{ buffer = Msg } }
-	    end
+           binary_to_list(
+             hd(stq:header('Content-Length', Stq)))) of
+        Length ->
+            case Msg of
+                <<Body:Length/binary, Rest/binary>> ->
+                    {ok, stq:body(Body, State#state.stq), Rest};
+                Msg ->
+                    {more, State#state{ buffer = Msg } }
+            end
     end.
 
 set_opts(State, [{body_parser, Parser} | Rest]) ->

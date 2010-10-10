@@ -1,4 +1,4 @@
--module(test_essesin).
+-module(test_esessin_method).
 
 -compile(export_all).
 
@@ -106,31 +106,31 @@ complex_invite() ->
     ?assertEqual(invite,stq:method(O)),
     ?assertEqual(<<"sip:bob@biloxi.com">>,stq:uri(O)),
     ?assertEqual({2,0}, stq:vsn(O)),
-    ?assertEqual(['Via','Max-Forwards', <<"To">>, 'From', <<"Call-Id">>,
-		  <<"Cseq">>,<<"Contact">>,'Content-Type','Content-Length'],
+    ?assertEqual(['Via','Max-Forwards', 'To', 'From', 'Call-Id',
+		  'Cseq','Contact','Content-Type','Content-Length'],
 		 stq:header_fields(O)),
     ?assertEqual([<<"SIP/2.0/UDP pc33.atlanta.com;branch=z9hG4bK776asdhds">>],
 		 stq:header('Via',O)),
     ?assertEqual([<<"70">>], stq:header('Max-Forwards',O)),
-    ?assertEqual([<<"Bob <sip:bob@biloxi.com>">>], stq:header(<<"To">>,O)),
+    ?assertEqual([<<"Bob <sip:bob@biloxi.com>">>], stq:header('To',O)),
     ?assertEqual([<<"Alice <sip:alice@atlanta.com>;tag=1928301774">>],
 		 stq:header('From',O)),
     ?assertEqual([<<"a84b4c76e66710@pc33.atlanta.com">>],
-		 stq:header(<<"Call-Id">>,O)),
-    ?assertEqual([<<"314159 INVITE">>], stq:header(<<"Cseq">>, O)),
+		 stq:header('Call-Id',O)),
+    ?assertEqual([<<"314159 INVITE">>], stq:header('Cseq', O)),
     ?assertEqual([<<"<sip:alice@pc33.atlanta.com>">>],
-		 stq:header(<<"Contact">>, O)),
+		 stq:header('Contact', O)),
     ?assertEqual([<<"application/sdp">>], stq:header('Content-Type', O)),
     ?assertEqual([<<"7">>], stq:header('Content-Length', O)),
 
     ?assertEqual([{'Via',<<"SIP/2.0/UDP pc33.atlanta.com;"
 			  "branch=z9hG4bK776asdhds">>},
 		  {'Max-Forwards',<<"70">>},
-		  {<<"To">>,<<"Bob <sip:bob@biloxi.com>">>},
+		  {'To',<<"Bob <sip:bob@biloxi.com>">>},
 		  {'From',<<"Alice <sip:alice@atlanta.com>;tag=1928301774">>},
-		  {<<"Call-Id">>,<<"a84b4c76e66710@pc33.atlanta.com">>},
-		  {<<"Cseq">>,<<"314159 INVITE">>},
-		  {<<"Contact">>,<<"<sip:alice@pc33.atlanta.com>">>},
+		  {'Call-Id',<<"a84b4c76e66710@pc33.atlanta.com">>},
+		  {'Cseq',<<"314159 INVITE">>},
+		  {'Contact',<<"<sip:alice@pc33.atlanta.com>">>},
 		  {'Content-Type',<<"application/sdp">>},
 		  {'Content-Length',<<"7">>}],
 		 stq:headers(O)),
