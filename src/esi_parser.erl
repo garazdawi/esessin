@@ -3,7 +3,9 @@
 
 -module(esi_parser).
 
--export([parse_packet/2, parse_header/2]).
+-export([decode_packet/3,
+	 decode_method/2,
+	 decode_header/2]).
 
 
 -type proplist() :: list({atom(), term()}).
@@ -21,12 +23,23 @@
 %% --------------------------------------------------------------------------
 %% API
 %% -------------------------------------------------------------------------
-%% @doc Parse a SIP Request/Response line
--spec parse_packet(binary(), Opts :: proplist()) ->
+%% @doc Decode a SIP packet line
+-spec decode_packet(sip_bin | siph_bin, binary(), Opts :: proplist()) ->
+    {more, undefined | integer()} |
+    {ok, sip_request() | sip_response() | sip_error(), Rest :: binary()} |
+    {ok, sip_header() | sip_eoh | sip_error(), Rest :: binary()} |
+    {error, Reason :: term()}.
+decode_packet(sip_bin, Bin, Opts) ->
+    decode_method(Bin, Opts);
+decode_packet(siph_bin, Bin, Opts) ->
+    decode_header(Bin, Opts).
+
+%% @doc Decode a SIP Request/Response line
+-spec decode_method(binary(), Opts :: proplist()) ->
     {more, undefined | integer()} |
     {ok, sip_request() | sip_response() | sip_error(), Rest :: binary()} |
     {error, Reason :: term()}.
-parse_packet(Bin, Opts) ->
+decode_method(Bin, Opts) ->
     case binary:split(Bin, [<<"\n">>,<<"\r\n">>]) of
         [Line, Rest] ->
             try
@@ -38,12 +51,12 @@ parse_packet(Bin, Opts) ->
             {more, undefined}
     end.
     
-%% @doc Parse a SIP header line
--spec parse_header(binary(), Opts :: proplist()) ->
+%% @doc Decode a SIP header line
+-spec decode_header(binary(), Opts :: proplist()) ->
     {more, undefined | integer()} |
     {ok, sip_header() | sip_eoh | sip_error(), Rest :: binary()} |
     {error, Reason :: term()}.
-parse_header(Data, _Opts) ->
+decode_header(Data, _Opts) ->
     case erlang:decode_packet(httph_bin, Data, []) of
         {ok, {http_header, Code, Field, Unused, Value}, Rest} ->
             % TODO: Strip \t(\r)\n sequences, see RFC 3261 § 7.3.1

@@ -42,7 +42,7 @@ encode(Data, _Opts) ->
 %% --------------------------------------------------------------------------
 
 parse(Bin, #state{ state = undefined } = State) ->
-    case esi_parser:parse_packet(Bin, []) of
+    case esi_parser:decode_packet(sip_bin, Bin, []) of
         {ok, {sip_request, Method, Uri, Vsn}, Rest} ->
             parse(Rest, State#state{ state = header,
                                      headers = [],
@@ -70,7 +70,7 @@ parse(Bin, #state{ state = undefined } = State) ->
             erlang:error(Reason, [Bin, State])
     end;
 parse(Bin, #state{ state = header, headers = Headers } = State) ->
-    case esi_parser:parse_header(Bin, []) of
+    case esi_parser:decode_packet(siph_bin, Bin, []) of
         {ok, {sip_header, _, Field, _, Value}, Rest} ->
             parse(Rest, State#state{ headers = [{Field, Value} | Headers]});
         {ok, {sip_error, Line}, Rest}
