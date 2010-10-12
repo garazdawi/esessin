@@ -9,18 +9,25 @@
 
 -include("stq.hrl").
 
--export([decode/2, encode/2]).
+-export([compile_options/1,
+	 decode/2,
+	 encode/2]).
 
 -record(state, { state :: atom(),
 		 headers :: list(),
 		 buffer = <<>> :: binary(),
-		 body_parser = esi_body_binary,
 		 on_parse_error = ignore_line,
 		 stq :: stq_opaque() }).
 
 %% --------------------------------------------------------------------------
 %% API
 %% -------------------------------------------------------------------------
+%% @doc Compile all options for faster lookups
+-spec compile_options(Opts :: proplist()) ->
+    Opaque :: term().
+compile_options(Opts) ->
+    set_opts(#state{ }, Opts).
+
 %% @doc Decode a SIP binary to a STQ data structure
 -spec decode(binary(), term() | proplist()) ->
     {more, Opaque :: term()} | {ok, Data :: stq_opaque(), Rest :: binary()}.
@@ -106,8 +113,6 @@ parse(Msg, #state{ state = body, stq = Stq } = State) ->
             end
     end.
 
-set_opts(State, [{body_parser, Parser} | Rest]) ->
-    set_opts(State#state{ body_parser = Parser }, Rest);
 set_opts(State, [{on_parse_error, Action} | Rest]) ->
     set_opts(State#state{ on_parse_error = Action }, Rest);
 set_opts(State, []) ->
