@@ -148,11 +148,33 @@ complex_invite() ->
     ?assertEqual(<<"\n\n">>, Rest).
 
 parse_error(Method) ->
+
+    Str = <<Method/binary, "\r\n"
+	   "Via: home.se\r\n"
+	   "Content-Length: 0\r\n\r\n">>,
     
     ?assertError(
-       {parse_failed, _, _},esessin:decode(
-			      <<Method/binary, "\r\n"
-			       "Via: home.se\r\n"
-			       "Content-Length: 0\r\n\r\n">>,[])).
-					
-					 
+       {parse_failed, _, _},esessin:decode(Str, [])),
+    ?assertMatch(
+       {more, _}, esessin:decode(Str ,[{on_parse_error, ignore}])),	
+
+    Self = self(),
+    Fun = fun(Line, Rest) ->
+		  Self ! Line,
+		  Rest
+	  end,
+    
+    ?assertMatch(
+       {more, _}, esessin:decode(Str, [{on_parse_error, Fun}])),
+
+    ?assertEqual(Str, receive_all(<<>>)).
+
+receive_all(Acc) ->
+    receive
+	Bin ->
+	    receive_all(<<Acc/binary,Bin/binary>>)
+    after 1 ->
+	    io:format(Acc),
+	    Acc
+    end.
+	    
