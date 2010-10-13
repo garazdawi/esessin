@@ -105,7 +105,8 @@ parse(Msg, #decode_state{ state = body, stq = Stq } = State) ->
 	    {more, State#decode_state{ buffer = Msg } }
     end.
 
-parse_error(Line, Rest, _Bin, #decode_state{ state = method } = State)
+parse_error(Line, Rest, _Bin, #decode_state{ state = method,
+					     on_parse_error = fail } = State)
   when Line =:= <<"\r\n">>; Line =:= <<"\n">> ->
     parse(Rest, State);
 parse_error(Line, Rest, Bin, #decode_state{ on_parse_error = fail } = State) ->
