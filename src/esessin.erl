@@ -96,16 +96,13 @@ parse(Bin, #decode_state{ state = header, headers = Headers } = State) ->
             erlang:error(Reason, [Bin, State])
     end;
 parse(Msg, #decode_state{ state = body, stq = Stq } = State) ->
-    case list_to_integer(
-           binary_to_list(
-             hd(stq:header('Content-Length', Stq)))) of
-        Length ->
-            case Msg of
-                <<Body:Length/binary, Rest/binary>> ->
-                    {ok, stq:body(Body, State#decode_state.stq), Rest};
-                Msg ->
-                    {more, State#decode_state{ buffer = Msg } }
-            end
+    ContentLength = hd(stq:header('Content-Length', Stq)),
+    Length = bstring:to_integer(ContentLength),
+    case Msg of
+	<<Body:Length/binary, Rest/binary>> ->
+	    {ok, stq:body(Body, State#decode_state.stq), Rest};
+	Msg ->
+	    {more, State#decode_state{ buffer = Msg } }
     end.
 
 parse_error(Line, Rest, _Bin, #decode_state{ state = method } = State)
