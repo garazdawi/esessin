@@ -129,17 +129,13 @@ parse_uri(Uri) ->
 
 %% header_field parse functions
 parse_header_field(<<"Alert-Info">>) -> 'Alert-Info';
-parse_header_field(<<"Allow">>) -> 'Allow';
 parse_header_field(<<"Authentication-Info">>) -> 'Authentication-Info';
 parse_header_field(<<"Call-Id">>) -> 'Call-Id';
 parse_header_field(<<"Call-Info">>) -> 'Call-Info';
 parse_header_field(<<"Contact">>) -> 'Contact';
 parse_header_field(<<"Content-Disposition">>) -> 'Content-Disposition';
-parse_header_field(<<"Content-Language">>) -> 'Content-Language';
 parse_header_field(<<"Cseq">>) -> 'Cseq';
-parse_header_field(<<"Date">>) -> 'Date';
 parse_header_field(<<"Error-Info">>) -> 'Error-Info';
-parse_header_field(<<"Expires">>) -> 'Expires';
 parse_header_field(<<"In-Reply-To">>) -> 'In-Reply-To';
 parse_header_field(<<"Min-Expires">>) -> 'Min-Expires';
 parse_header_field(<<"Mime-Version">>) -> 'Mime-Version';
@@ -149,7 +145,6 @@ parse_header_field(<<"Proxy-Require">>) -> 'Proxy-Require';
 parse_header_field(<<"Record-Route">>) -> 'Record-Route';
 parse_header_field(<<"Reply-To">>) -> 'Reply-To';
 parse_header_field(<<"Require">>) -> 'Require';
-parse_header_field(<<"Retry-After">>) -> 'Retry-After';
 parse_header_field(<<"Route">>) -> 'Route';
 parse_header_field(<<"Subject">>) -> 'Subject';
 parse_header_field(<<"Supported">>) -> 'Supported';
