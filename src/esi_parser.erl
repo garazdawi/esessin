@@ -40,7 +40,7 @@ decode_packet(siph_bin, Bin, Opts) ->
     {ok, sip_request() | sip_response() | sip_error(), Rest :: binary()} |
     {error, Reason :: term()}.
 decode_method(Bin, Opts) ->
-    case binary:split(Bin, [<<"\n">>,<<"\r\n">>]) of
+    case binary:split(Bin, [<<"\n">>]) of
         [Line, Rest] ->
             try
                 {ok, parse_line(bstring:to_lower(Line), Opts), Rest}
@@ -75,7 +75,7 @@ decode_header(Data, _Opts) ->
 parse_line(<<>>, _Opts) ->
     throw(could_not_parse);
 parse_line(Line, _Opts) ->
-    case binary:split(Line, <<" ">>,[global]) of
+    case binary:split(Line, [<<" ">>,<<"\r">>],[global,trim]) of
         [<<"sip",_/binary>> = Vsn, Code, Msg] ->
             {sip_response, parse_vsn(Vsn), parse_code(Code), Msg};
         [Method, Uri, Vsn] ->
@@ -112,7 +112,9 @@ parse_vsn(<<"sip/", Vsn/binary>>) ->
             end;
         _Else ->
             throw(could_not_parse)
-    end.
+    end;
+parse_vsn(_) ->
+    throw(could_not_parse).
 
 parse_code(Code) ->
     try
