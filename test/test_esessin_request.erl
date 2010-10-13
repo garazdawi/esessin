@@ -1,4 +1,4 @@
--module(test_esessin_method).
+-module(test_esessin_request).
 
 -compile(export_all).
 
@@ -6,9 +6,18 @@
 
 decode_test_() ->
      method_decode() ++
-      [fun ?MODULE:more/0,
-       fun ?MODULE:two_in_one/0,
-       fun ?MODULE:complex_invite/0].
+      [fun more/0,
+       fun two_in_one/0,
+       fun complex_invite/0].
+
+decode_error_test_() ->
+    [{Label, ?_test(parse_error(Value))}
+     || {Label, Value} <- [{"not_sip",<<"INVITE lukas@test HTTP/1.1">>},
+			   {"char version",<<"INVITE lukas@test SIP/K.0">>},
+			   {"three version",<<"INVITE lukas@test SIP/2.0.1">>},
+			   {"two parts",<<"INVITE SIP/2.0">>},
+			   {"four parts",<<"INV ITE lukas@test SIP/2.0">>}
+			  ]].
 
 method_decode() ->
     [{binary_to_list(Method), ?_test(simple_decode(Exp, Method))} ||
@@ -137,3 +146,13 @@ complex_invite() ->
 
     ?assertEqual(<<"Test: 1">>, stq:body(O)),
     ?assertEqual(<<"\n\n">>, Rest).
+
+parse_error(Method) ->
+    
+    ?assertError(
+       {parse_failed, _, _},esessin:decode(
+			      <<Method/binary, "\r\n"
+			       "Via: home.se\r\n"
+			       "Content-Length: 0\r\n\r\n">>,[])).
+					
+					 
