@@ -18,7 +18,7 @@
 -type decode_options() :: [{on_parse_error, ignore | fail | function()}].
 -type encode_options() :: [].
 
--record(decode_state, { state :: atom(),
+-record(decode_state, { state = method :: method | header | body,
 			headers :: list(),
 			buffer = <<>> :: binary(),
 			on_parse_error = fail,
@@ -61,7 +61,7 @@ encode(Data, _Opts) ->
 %% Internal Decode Functions
 %% --------------------------------------------------------------------------
 
-parse(Bin, #decode_state{ state = undefined } = State) ->
+parse(Bin, #decode_state{ state = method } = State) ->
     case esi_parser:decode_packet(sip_bin, Bin, []) of
         {ok, {sip_request, Method, Uri, Vsn}, Rest} ->
             parse(Rest, State#decode_state{ state = header,
@@ -71,19 +71,8 @@ parse(Bin, #decode_state{ state = undefined } = State) ->
             parse(Rest, State#decode_state{ state = header,
                                      headers = [],
                                      stq = stq:new(Code, Msg, Vsn) });
-        {ok, {sip_error, Line}, Rest}
-        when Line =:= <<"\r\n">>; Line =:= <<"\n">> ->
-            parse(Rest, State);
-        {ok, {sip_error, Line}, Rest}
-        when  State#decode_state.on_parse_error =:= fail ->
-            erlang:error({parse_failed, Line, Rest},[Bin, State]);
-        {ok, {sip_error, _Line}, Rest}
-        when  State#decode_state.on_parse_error =:= ignore ->
-            parse(Rest, State);
-        {ok, {sip_error, Line}, Rest}
-        when  is_function(State#decode_state.on_parse_error) ->
-            NewRest = (State#decode_state.on_parse_error)(Line, Rest),
-            parse(NewRest, State);
+        {ok, {sip_error, Line}, Rest} ->
+	    parse_error(Line, Rest, Bin, State);
         {more, _HowMuch} ->
             {more, State#decode_state{ buffer = Bin }};
         {error, Reason} ->
@@ -92,17 +81,10 @@ parse(Bin, #decode_state{ state = undefined } = State) ->
 parse(Bin, #decode_state{ state = header, headers = Headers } = State) ->
     case esi_parser:decode_packet(siph_bin, Bin, []) of
         {ok, {sip_header, _, Field, _, Value}, Rest} ->
-            parse(Rest, State#decode_state{ headers = [{Field, Value} | Headers]});
-        {ok, {sip_error, Line}, Rest}
-        when State#decode_state.on_parse_error =:= fail ->
-            erlang:error({parse_failed, Line, Rest},[Bin, State]);
-        {ok, {sip_error, _Line}, Rest}
-        when State#decode_state.on_parse_error =:= ignore ->
-            parse(Rest, State);
-        {ok, {sip_error, Line}, Rest}
-        when  is_function(State#decode_state.on_parse_error) ->
-            NewRest = (State#decode_state.on_parse_error)(Line, Rest),
-            parse(NewRest, State);
+            parse(Rest, State#decode_state{
+			  headers = [{Field, Value} | Headers]});
+        {ok, {sip_error, Line}, Rest} ->
+	    parse_error(Line, Rest, Bin, State);
         {ok, sip_eoh, Body} ->
             parse(Body, State#decode_state{
                           state = body,
@@ -125,6 +107,18 @@ parse(Msg, #decode_state{ state = body, stq = Stq } = State) ->
                     {more, State#decode_state{ buffer = Msg } }
             end
     end.
+
+parse_error(Line, Rest, _Bin, #decode_state{ state = method } = State)
+  when Line =:= <<"\r\n">>; Line =:= <<"\n">> ->
+    parse(Rest, State);
+parse_error(Line, Rest, Bin, #decode_state{ on_parse_error = fail } = State) ->
+    erlang:error({parse_failed, Line, Rest},[Line, Rest, Bin, State]);
+parse_error(_, Rest, _Bin, #decode_state{ on_parse_error = ignore } = State) ->
+    parse(Rest, State);
+parse_error(Line, Rest, _Bin, #decode_state{ on_parse_error = Fun } = State)
+  when is_function(Fun) ->
+    NewRest = Fun(Line, Rest),
+    parse(NewRest, State).
 
 set_decode_opts(State, [{on_parse_error, Action} | Rest]) ->
     set_decode_opts(State#decode_state{ on_parse_error = Action }, Rest);
