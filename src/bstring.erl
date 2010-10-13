@@ -4,7 +4,7 @@
 -module(bstring).
 
 %% API
--export([to_lower/1, to_upper/1]).
+-export([to_lower/1, to_upper/1, to_integer/1]).
 
 %% -----------------------------------------------------------------------------
 %% API
@@ -30,3 +30,7 @@ to_upper(<<C, Rest/binary>>, Acc) ->
     to_upper(Rest, <<Acc/binary, C>>);
 to_upper(<<>>, Acc) ->
     Acc.
+
+-spec to_integer(binary()) -> integer().
+to_integer(Bin) ->
+    list_to_integer(binary_to_list(Bin)).
