@@ -50,6 +50,29 @@ sip_header_decode_test_() ->
                           {'Www-Authenticate',<<"WWW-Authenticate">>},
                           {<<"Test">>,<<"test">>}]].
 
+sip_header_compact_decode_test_() ->
+    [{binary_to_list(Header), ?_test(simple_decode(Exp, Header))} ||
+        {Exp, Header} <- [{'Accept-Contact',<<"a">>},
+			  {'Allow-Events',<<"u">>},
+			  {'Call-ID',<<"i">>},
+			  {'Contact',<<"m">>},
+			  {'Content-Encoding',<<"e">>},
+			  {'Content-Length',<<"l">>},
+			  {'Content-Type',<<"c">>},
+			  {'Event',<<"o">>},
+			  {'From',<<"f">>},
+			  {'Identity',<<"y">>},
+			  {'Identity-Info',<<"n">>},
+			  {'Refer-To',<<"r">>},
+			  {'Referred-By',<<"b">>},
+			  {'Reject-Contact',<<"j">>},
+			  {'Request-Disposition',<<"d">>},
+			  {'Session-Expires',<<"x">>},
+			  {'Subject',<<"s">>},
+			  {'Supported',<<"k">>},
+			  {'To',<<"t">>},
+			  {'Via',<<"v">>}]].
+
 http_header_decode_test_() ->
     [{binary_to_list(Header), ?_test(simple_decode(Header, Header))} ||
         Header <- [<<"Cache-Control">>,
@@ -87,7 +110,7 @@ http_header_decode_test_() ->
 
 simple_decode(Exp, Header) ->
     {ok, O, Rest} = esessin:decode(<<"INVITE sip:lukas@localhost SIP/1.0\r\n",
-                                    Header/binary, ": test\r\n"
+                                    Header/binary, ": 0\r\n"
                                     "Content-Length: 0\r\n\r\n">>, []),
 
     io:format("Opaque = ~p~n",[O]),
@@ -96,7 +119,7 @@ simple_decode(Exp, Header) ->
     ?assertEqual(<<"sip:lukas@localhost">>, stq:uri(O)),
     ?assertEqual({1,0}, stq:vsn(O)),
     ?assertEqual([Exp,'Content-Length'], stq:header_fields(O)),
-    ?assertEqual([{Exp,<<"test">>},
+    ?assertEqual([{Exp,<<"0">>},
                   {'Content-Length',<<"0">>}], stq:headers(O)),
     ?assertEqual(<<>>, stq:body(O)),
     ?assertEqual(<<>>, Rest).

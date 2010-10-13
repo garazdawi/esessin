@@ -127,7 +127,7 @@ parse_uri(Uri) ->
     Uri.
 
 
-%% header_field parse functions
+%% sip header_field parse functions
 parse_header_field(<<"Alert-Info">>) -> 'Alert-Info';
 parse_header_field(<<"Authentication-Info">>) -> 'Authentication-Info';
 parse_header_field(<<"Call-Id">>) -> 'Call-Id';
@@ -151,6 +151,29 @@ parse_header_field(<<"Supported">>) -> 'Supported';
 parse_header_field(<<"Timestamp">>) -> 'Timestamp';
 parse_header_field(<<"To">>) -> 'To';
 parse_header_field(<<"Unsupported">>) -> 'Unsupported';
+%% Compact header parse functions
+%% see http://www.iana.org/assignments/sip-parameters
+parse_header_field(<<"A">>) -> 'Accept-Contact';
+parse_header_field(<<"U">>) -> 'Allow-Events';
+parse_header_field(<<"I">>) -> 'Call-ID';
+parse_header_field(<<"M">>) -> 'Contact';
+parse_header_field(<<"E">>) -> 'Content-Encoding';
+parse_header_field(<<"L">>) -> 'Content-Length';
+parse_header_field(<<"C">>) -> 'Content-Type';
+parse_header_field(<<"O">>) -> 'Event';
+parse_header_field(<<"F">>) -> 'From';
+parse_header_field(<<"Y">>) -> 'Identity';
+parse_header_field(<<"N">>) -> 'Identity-Info';
+parse_header_field(<<"R">>) -> 'Refer-To';
+parse_header_field(<<"B">>) -> 'Referred-By';
+parse_header_field(<<"J">>) -> 'Reject-Contact';
+parse_header_field(<<"D">>) -> 'Request-Disposition';
+parse_header_field(<<"X">>) -> 'Session-Expires';
+parse_header_field(<<"S">>) -> 'Subject';
+parse_header_field(<<"K">>) -> 'Supported';
+parse_header_field(<<"T">>) -> 'To';
+parse_header_field(<<"V">>) -> 'Via';
+%% http header_field reversal
 parse_header_field('Cache-Control') -> <<"Cache-Control">>;
 parse_header_field('Connection') -> <<"Connection">>;
 parse_header_field('Pragma') -> <<"Pragma">>;
