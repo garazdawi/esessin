@@ -15,11 +15,12 @@
 	 encode/2]).
 
 
--type decode_options() :: [{on_parse_error, ignore | fail | function()}].
+-type decode_options() :: [{on_parse_error, ignore | fail | function()} |
+			   {keep_line_info, false}].
 -type encode_options() :: [].
 
 -record(decode_state, { state = method :: method | header | body,
-			headers :: list(),
+			line_number,
 			buffer = <<>> :: binary(),
 			on_parse_error = fail,
 			stq :: stq_opaque() }).
@@ -65,11 +66,9 @@ parse(Bin, #decode_state{ state = method } = State) ->
     case esi_parser:decode_packet(sip_bin, Bin, []) of
         {ok, {sip_request, Method, Uri, Vsn}, Rest} ->
             parse(Rest, State#decode_state{ state = header,
-                                     headers = [],
                                      stq = stq:new(Method, Uri, Vsn) });
         {ok, {sip_response, Vsn, Code, Msg}, Rest} ->
             parse(Rest, State#decode_state{ state = header,
-                                     headers = [],
                                      stq = stq:new(Code, Msg, Vsn) });
         {ok, {sip_error, Line}, Rest} ->
 	    parse_error(Line, Rest, Bin, State);
@@ -78,25 +77,25 @@ parse(Bin, #decode_state{ state = method } = State) ->
         {error, Reason} ->
             erlang:error(Reason, [Bin, State])
     end;
-parse(Bin, #decode_state{ state = header, headers = Headers } = State) ->
+parse(Bin, #decode_state{ state = header,
+			  line_number = LnNo,
+			  stq = Stq } = State) ->
     case esi_parser:decode_packet(siph_bin, Bin, []) of
         {ok, {sip_header, _, Field, _, Value}, Rest} ->
             parse(Rest, State#decode_state{
-			  headers = [{Field, Value} | Headers]});
+			  line_number = next_line_no(LnNo),
+			  stq = stq:header(Field, Value, LnNo, Stq)});
         {ok, {sip_error, Line}, Rest} ->
 	    parse_error(Line, Rest, Bin, State);
         {ok, sip_eoh, Body} ->
-            parse(Body, State#decode_state{
-                          state = body,
-                          stq = stq:headers(lists:reverse(Headers),
-                                            State#decode_state.stq) });
+            parse(Body, State#decode_state{ state = body });
         {more, _HowMuch} ->
             {more, State#decode_state{ buffer = Bin } };
         {error, Reason} ->
             erlang:error(Reason, [Bin, State])
     end;
 parse(Msg, #decode_state{ state = body, stq = Stq } = State) ->
-    ContentLength = hd(stq:header('Content-Length', Stq)),
+    {ContentLength, _} = hd(stq:header('Content-Length', Stq)),
     Length = bstring:to_integer(ContentLength),
     case Msg of
 	<<Body:Length/binary, Rest/binary>> ->
@@ -104,6 +103,12 @@ parse(Msg, #decode_state{ state = body, stq = Stq } = State) ->
 	Msg ->
 	    {more, State#decode_state{ buffer = Msg } }
     end.
+
+
+next_line_no(undefined) ->
+    undefined;
+next_line_no(No) ->
+    No + 1.
 
 parse_error(Line, Rest, _Bin, #decode_state{ state = method,
 					     on_parse_error = fail } = State)
@@ -118,6 +123,10 @@ parse_error(Line, Rest, _Bin, #decode_state{ on_parse_error = Fun } = State)
     NewRest = Fun(Line, Rest),
     parse(NewRest, State).
 
+set_decode_opts(State, [{keep_line_info, true} | Rest]) ->
+    set_decode_opts(State#decode_state{ line_number = 1 }, Rest);
+set_decode_opts(State, [{keep_line_info, false} | Rest]) ->
+    set_decode_opts(State, Rest);
 set_decode_opts(State, [{on_parse_error, Action} | Rest]) ->
     set_decode_opts(State#decode_state{ on_parse_error = Action }, Rest);
 set_decode_opts(State, [_ | _] = Rest) ->

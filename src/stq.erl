@@ -16,6 +16,7 @@
 -export([headers/1, headers/2]).
 -export([body/1, body/2]).
 -export([header/2]).
+-export([header/4]).
 
 %% API
 -export([new/3]).
@@ -69,11 +70,21 @@ header_fields(#stq_req{ headers = Headers }) ->
 header_fields(#stq_res{ headers = Headers }) ->
     [Field || {Field, _Value} <- Headers].
 
--spec header( sip_header_field(), stq_opaque()) -> list(sip_header()).
+-spec header( sip_header_field(), stq_opaque()) ->
+    list({sip_header_value(), sip_header_line_no()}).
 header(Header, #stq_req{ headers = Headers }) ->
-    [V || {H, V} <- Headers, Header =:= H];
+    proplists:get_value(Header, Headers);
 header(Header, #stq_res{ headers = Headers }) ->
-    [V || {H, V} <- Headers, Header =:= H].
+    proplists:get_value(Header, Headers).
+
+-spec header( sip_header_field(), sip_header_value(), sip_header_line_no(),
+	      stq_opaque()) -> stq_opaque().
+header(Header, Value, LnNo, #stq_req{ headers = Headers } = Stq) ->
+    NewHeaders = insert_header(Header, {Value, LnNo}, Headers),
+    Stq#stq_req{ headers = NewHeaders };
+header(Header, Value, LnNo, #stq_res{ headers = Headers } = Stq) ->
+    NewHeaders = insert_header(Header, {Value, LnNo}, Headers),
+    Stq#stq_res{ headers = NewHeaders }.
 
 %% -----------------------------------------------------------------------------
 %% API
@@ -81,6 +92,17 @@ header(Header, #stq_res{ headers = Headers }) ->
 -spec new(sip_code() | sip_method(), sip_uri() | sip_resp_msg(), sip_vsn()) ->
     stq_opaque().
 new(Code, Msg, Vsn) when is_integer(Code) ->
-    #stq_res{ code = Code, resp_msg = Msg, vsn = Vsn };
+    #stq_res{ code = Code, resp_msg = Msg, vsn = Vsn, headers = [] };
 new(Method, Uri, Vsn) ->
-    #stq_req{ method = Method, uri = Uri, vsn = Vsn }.
+    #stq_req{ method = Method, uri = Uri, vsn = Vsn, headers = []  }.
+
+
+%% -----------------------------------------------------------------------------
+%% Internal Functions
+%% -----------------------------------------------------------------------------
+insert_header(Header, Value, [{Header, Values} | Rest]) ->
+    [{Header, lists:reverse([Value | lists:reverse(Values)])} | Rest];
+insert_header(Header, Value, [HeaderValue | Rest]) ->
+    [HeaderValue | insert_header(Header, Value, Rest)];
+insert_header(Header, Value, []) ->
+    [{Header, [Value]}].

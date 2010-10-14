@@ -108,6 +108,16 @@ http_header_decode_test_() ->
                    <<"Proxy-Connection">>]].
 
 
+simple_decode('Content-Length' = Exp, Header) ->
+    {ok, O, Rest} = esessin:decode(<<"INVITE sip:lukas@localhost SIP/1.0\r\n",
+                                    Header/binary, ": 0\r\n\r\n">>, []),
+
+    io:format("Opaque = ~p~n",[O]),
+
+    ?assertEqual([Exp], stq:header_fields(O)),
+    ?assertEqual([{Exp,[{<<"0">>,undefined}]}], stq:headers(O)),
+    ?assertEqual(<<>>, stq:body(O)),
+    ?assertEqual(<<>>, Rest);
 simple_decode(Exp, Header) ->
     {ok, O, Rest} = esessin:decode(<<"INVITE sip:lukas@localhost SIP/1.0\r\n",
                                     Header/binary, ": 0\r\n"
@@ -115,13 +125,23 @@ simple_decode(Exp, Header) ->
 
     io:format("Opaque = ~p~n",[O]),
 
-    ?assertEqual(invite, stq:method(O)),
-    ?assertEqual(<<"sip:lukas@localhost">>, stq:uri(O)),
-    ?assertEqual({1,0}, stq:vsn(O)),
     ?assertEqual([Exp,'Content-Length'], stq:header_fields(O)),
-    ?assertEqual([{Exp,<<"0">>},
-                  {'Content-Length',<<"0">>}], stq:headers(O)),
+    ?assertEqual([{Exp,[{<<"0">>,undefined}]},
+                  {'Content-Length',[{<<"0">>,undefined}]}], stq:headers(O)),
     ?assertEqual(<<>>, stq:body(O)),
     ?assertEqual(<<>>, Rest).
                        
 
+line_no_decode_test() ->
+    {ok, O, Rest} = esessin:decode(<<"INVITE sip:lukas@localhost SIP/1.0\r\n",
+                                    "Via: petter\r\n"
+                                    "Content-Length: 0\r\n\r\n">>,
+				   [{keep_line_info, true}]),
+
+    io:format("Opaque = ~p~n",[O]),
+
+    ?assertEqual(['Via','Content-Length'], stq:header_fields(O)),
+    ?assertEqual([{'Via',[{<<"petter">>,1}]},
+                  {'Content-Length',[{<<"0">>,2}]}], stq:headers(O)),
+    ?assertEqual(<<>>, stq:body(O)),
+    ?assertEqual(<<>>, Rest).
