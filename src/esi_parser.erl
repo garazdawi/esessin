@@ -16,7 +16,7 @@
 			Vsn :: vsn() }.
 -type sip_response() :: {sip_response, Vsn :: vsn(), Code :: integer(),
 			 Msg :: binary()}.
--type sip_header() :: {sip_header, term(), Field :: atom() | binary(),
+-type sip_parse_header() :: {sip_header, term(), Field :: atom() | binary(),
 		       term(), Value :: binary()}.
 -type sip_error() :: {sip_error, Line :: binary()}.
 
@@ -24,11 +24,12 @@
 %% API
 %% -------------------------------------------------------------------------
 %% @doc Decode a SIP packet line
--spec decode_packet(sip_bin | siph_bin, binary(), Opts :: proplist()) ->
+-spec decode_packet(sip_bin , binary(), Opts :: proplist()) ->
     {more, undefined | integer()} |
-    {ok, sip_request() | sip_response() | sip_error(), Rest :: binary()} |
-    {ok, sip_header() | sip_eoh | sip_error(), Rest :: binary()} |
-    {error, Reason :: term()}.
+    {ok, sip_request() | sip_response() | sip_error(), Rest :: binary()};
+                   (siph_bin, binary(), Opts :: proplist()) ->
+    {more, undefined | integer()} |
+    {ok, sip_parse_header() | sip_eoh | sip_error(), Rest :: binary()}.
 decode_packet(sip_bin, Bin, Opts) ->
     decode_method(Bin, Opts);
 decode_packet(siph_bin, Bin, Opts) ->
@@ -37,8 +38,7 @@ decode_packet(siph_bin, Bin, Opts) ->
 %% @doc Decode a SIP Request/Response line
 -spec decode_method(binary(), Opts :: proplist()) ->
     {more, undefined | integer()} |
-    {ok, sip_request() | sip_response() | sip_error(), Rest :: binary()} |
-    {error, Reason :: term()}.
+    {ok, sip_request() | sip_response() | sip_error(), Rest :: binary()}.
 decode_method(Bin, Opts) ->
     case binary:split(Bin, [<<"\n">>]) of
         [Line, Rest] ->
@@ -54,8 +54,7 @@ decode_method(Bin, Opts) ->
 %% @doc Decode a SIP header line
 -spec decode_header(binary(), Opts :: proplist()) ->
     {more, undefined | integer()} |
-    {ok, sip_header() | sip_eoh | sip_error(), Rest :: binary()} |
-    {error, Reason :: term()}.
+    {ok, sip_parse_header() | sip_eoh | sip_error(), Rest :: binary()}.
 decode_header(Data, _Opts) ->
     case erlang:decode_packet(httph_bin, Data, []) of
         {ok, {http_header, Code, Field, Unused, Value}, Rest} ->
@@ -128,6 +127,8 @@ parse_uri(Uri) ->
 
 
 %% sip header_field parse functions
+-spec parse_header_field(binary() | atom()) ->
+    atom() | binary().
 parse_header_field(<<"Alert-Info">>) -> 'Alert-Info';
 parse_header_field(<<"Authentication-Info">>) -> 'Authentication-Info';
 parse_header_field(<<"Call-Id">>) -> 'Call-Id';

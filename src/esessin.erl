@@ -51,7 +51,7 @@ decode(Bin, Opaque) ->
     parse(Bin, Opaque).
 
 %% @doc Encode a STQ data structure to a SIP binary
--spec encode(Data :: stq_opaque(), Opts :: proplist()) ->
+-spec encode(Data :: stq_opaque(), Opts :: term() | proplist()) ->
     binary().
 encode(Data, Opts) when is_list(Opts) ->
     encode(Data, compile_encode_options(Opts));
@@ -73,9 +73,7 @@ parse(Bin, #decode_state{ state = method } = State) ->
         {ok, {sip_error, Line}, Rest} ->
 	    parse_error(Line, Rest, Bin, State);
         {more, _HowMuch} ->
-            {more, State#decode_state{ buffer = Bin }};
-        {error, Reason} ->
-            erlang:error(Reason, [Bin, State])
+            {more, State#decode_state{ buffer = Bin }}
     end;
 parse(Bin, #decode_state{ state = header,
 			  line_number = LnNo,
@@ -90,9 +88,7 @@ parse(Bin, #decode_state{ state = header,
         {ok, sip_eoh, Body} ->
             parse(Body, State#decode_state{ state = body });
         {more, _HowMuch} ->
-            {more, State#decode_state{ buffer = Bin } };
-        {error, Reason} ->
-            erlang:error(Reason, [Bin, State])
+            {more, State#decode_state{ buffer = Bin } }
     end;
 parse(Msg, #decode_state{ state = body, stq = Stq } = State) ->
     {ContentLength, _} = hd(stq:header('Content-Length', Stq)),
