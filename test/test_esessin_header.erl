@@ -222,7 +222,11 @@ same_line_auth() ->
                   {'Content-Length',[{0,20}]}], stq:headers(O)).
 
 header_hook_test_() ->
-    [{"Overwrite 'Via'", fun hh_overwrite/0}].
+    [{"Overwrite 'Via'", fun hh_overwrite/0},
+     {"Parameter", fun hh_single_parameter/0},
+     {"Mult Parameter", fun hh_multiple_parameter/0},
+     {"Tabby Parameter", fun hh_tabby_parameter/0}
+    ].
 
 hh_overwrite() ->
     {ok, O, _Rest} =
@@ -242,3 +246,50 @@ hh_overwrite() ->
 			  {"lukas",20}]},
                   {'Content-Length',[{0,30}]}], stq:headers(O)).
 
+
+hh_single_parameter() ->
+    {ok, O, _Rest} =
+	esessin:decode(
+	  <<"INVITE sip:lukas@localhost SIP/1.0\r\n",
+	   "Via: petter;adam=friend\r\n"
+	   "Via: lukas\r\n"
+	   "Content-Length: 0\r\n\r\n">>,
+	  [{keep_line_info, true}]),
+
+    io:format("Opaque = ~p~n",[O]),
+
+    ?assertEqual(['Via','Content-Length'], stq:header_fields(O)),
+    ?assertEqual([{'Via',[{{<<"petter">>,[{<<"adam">>,<<"friend">>}]},10},
+			  {{<<"lukas">>,[]},20}]},
+                  {'Content-Length',[{0,30}]}], stq:headers(O)).
+
+hh_multiple_parameter() ->
+    {ok, O, _Rest} =
+	esessin:decode(
+	  <<"INVITE sip:lukas@localhost SIP/1.0\r\n",
+	   "Via: petter;adam=friend;lukas=friend\r\n"
+	   "Content-Length: 0\r\n\r\n">>,
+	  [{keep_line_info, true}]),
+
+    io:format("Opaque = ~p~n",[O]),
+
+    ?assertEqual(['Via','Content-Length'], stq:header_fields(O)),
+    ?assertEqual([{'Via',[{{<<"petter">>,[{<<"adam">>,<<"friend">>},
+					  {<<"lukas">>,<<"friend">>}]},10}]},
+                  {'Content-Length',[{0,20}]}], stq:headers(O)).
+
+hh_tabby_parameter() ->
+    {ok, O, _Rest} =
+	esessin:decode(
+	  <<"INVITE sip:lukas@localhost SIP/1.0\r\n",
+	   "Via: petter;adam=friend;\r\n"
+	   "\tlukas=friend\r\n"
+	   "Content-Length: 0\r\n\r\n">>,
+	  [{keep_line_info, true}]),
+
+    io:format("Opaque = ~p~n",[O]),
+
+    ?assertEqual(['Via','Content-Length'], stq:header_fields(O)),
+    ?assertEqual([{'Via',[{{<<"petter">>,[{<<"adam">>,<<"friend">>},
+					  {<<"lukas">>,<<"friend">>}]},10}]},
+                  {'Content-Length',[{0,20}]}], stq:headers(O)).
