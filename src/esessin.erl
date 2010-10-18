@@ -1,29 +1,30 @@
+%% -*- tab-width: 4;erlang-indent-level: 4;indent-tabs-mode: nil -*-
 %% @author Lukas Larsson <garazdawi@gmail.com>
 %% @copyright 2010
-
-%% TODO: Figure out how to handle SIP compact form headers, see RFC 3261 §7.3.1
-%% TODO: Figure out how to handle multi headers, see RFC 3261 §7.3.1
-%%       (i.e. Route: a,b vs Route: a\r\nRoute:b )
 
 -module(esessin).
 
 -include("stq.hrl").
 
 -export([compile_decode_options/1,
-	 compile_encode_options/1,
-	 decode/2,
-	 encode/2]).
+         compile_encode_options/1,
+         decode/2,
+         encode/2]).
 
 
 -type decode_options() :: [{on_parse_error, ignore | fail | function()} |
-			   {keep_line_info, false}].
+                           {keep_line_info, false} |
+                           {header_hooks,
+                            list({sip_header_field(),function()}) | none}
+                          ].
 -type encode_options() :: [].
 
 -record(decode_state, { state = method :: method | header | body,
-			line_number,
-			buffer = <<>> :: binary(),
-			on_parse_error = fail,
-			stq :: stq_opaque() }).
+                        line_number,
+                        buffer = <<>> :: binary(),
+                        header_hooks,
+                        on_parse_error = fail,
+                        stq :: stq_opaque() }).
 -record(encode_opts, {}).
 
 %% --------------------------------------------------------------------------
@@ -66,48 +67,50 @@ parse(Bin, #decode_state{ state = method } = State) ->
     case esi_parser:decode_packet(sip_bin, Bin, []) of
         {ok, {sip_request, Method, Uri, Vsn}, Rest} ->
             parse(Rest, State#decode_state{ state = header,
-                                     stq = stq:new(Method, Uri, Vsn) });
+                                            stq = stq:new(Method, Uri, Vsn) });
         {ok, {sip_response, Vsn, Code, Msg}, Rest} ->
             parse(Rest, State#decode_state{ state = header,
-                                     stq = stq:new(Code, Msg, Vsn) });
+                                            stq = stq:new(Code, Msg, Vsn) });
         {ok, {sip_error, Line}, Rest} ->
-	    parse_error(Line, Rest, Bin, State);
+            parse_error(Line, Rest, Bin, State);
         {more, _HowMuch} ->
             {more, State#decode_state{ buffer = Bin }}
     end;
 parse(Bin, #decode_state{ state = header,
-			  line_number = LnNo,
-			  stq = Stq } = State) ->
+                          line_number = LnNo,
+                          header_hooks = HH,
+                          stq = Stq } = State) ->
     case esi_parser:decode_packet(siph_bin, Bin, []) of
         {ok, {sip_header, _, Field, _, Value}, Rest} ->
             parse(Rest, State#decode_state{
-			  line_number = next_line_no(LnNo),
-			  stq = stq:header(Field, Value, LnNo, Stq)});
+                          line_number = next_line_no(LnNo),
+                          stq = esessin_header:decode(Field, Value, LnNo, Stq, HH)});
         {ok, {sip_error, Line}, Rest} ->
-	    parse_error(Line, Rest, Bin, State);
+            parse_error(Line, Rest, Bin, State);
         {ok, sip_eoh, Body} ->
             parse(Body, State#decode_state{ state = body });
         {more, _HowMuch} ->
             {more, State#decode_state{ buffer = Bin } }
     end;
 parse(Msg, #decode_state{ state = body, stq = Stq } = State) ->
-    {ContentLength, _} = hd(stq:header('Content-Length', Stq)),
-    Length = bstring:to_integer(ContentLength),
+    {Length, _} = hd(stq:header('Content-Length', Stq)),
     case Msg of
-	<<Body:Length/binary, Rest/binary>> ->
-	    {ok, stq:body(Body, State#decode_state.stq), Rest};
-	Msg ->
-	    {more, State#decode_state{ buffer = Msg } }
+        _ when is_integer(Length) =:= false ->
+            erlang:error({bad_hook, {'Content-Length', Length}}, [Msg, State]);
+        <<Body:Length/binary, Rest/binary>> ->
+            {ok, stq:body(Body, State#decode_state.stq), Rest};
+        Msg ->
+            {more, State#decode_state{ buffer = Msg } }
     end.
 
 
 next_line_no(undefined) ->
     undefined;
 next_line_no(No) ->
-    No + 1.
+    No + 10.
 
 parse_error(Line, Rest, _Bin, #decode_state{ state = method,
-					     on_parse_error = fail } = State)
+                                             on_parse_error = fail } = State)
   when Line =:= <<"\r\n">>; Line =:= <<"\n">> ->
     parse(Rest, State);
 parse_error(Line, Rest, Bin, #decode_state{ on_parse_error = fail } = State) ->
@@ -119,12 +122,24 @@ parse_error(Line, Rest, _Bin, #decode_state{ on_parse_error = Fun } = State)
     NewRest = Fun(Line, Rest),
     parse(NewRest, State).
 
+set_decode_opts(State = #decode_state{ header_hooks = undefined }, Opts) ->
+    NewHH = esessin_header:default_hooks(),
+    set_decode_opts(State#decode_state{ header_hooks = NewHH }, Opts);
 set_decode_opts(State, [{keep_line_info, true} | Rest]) ->
-    set_decode_opts(State#decode_state{ line_number = 1 }, Rest);
+    set_decode_opts(State#decode_state{ line_number = 10 }, Rest);
 set_decode_opts(State, [{keep_line_info, false} | Rest]) ->
     set_decode_opts(State, Rest);
 set_decode_opts(State, [{on_parse_error, Action} | Rest]) ->
     set_decode_opts(State#decode_state{ on_parse_error = Action }, Rest);
+set_decode_opts(State = #decode_state{ header_hooks = HH },
+                [{header_hooks, Hooks} | Rest]) when is_list(Hooks) ->
+    NewHH = lists:foldl(fun({Key,Fun}, Dict) when is_function(Fun) ->
+                                dict:store(Key, Fun, Dict)
+                        end, HH, Hooks),
+    set_decode_opts(State#decode_state{ header_hooks = NewHH }, Rest);
+set_decode_opts(State, [{header_hooks, none} | Rest]) ->
+    HH = esessin_header:no_hooks(),
+    set_decode_opts(State#decode_state{ header_hooks = HH }, Rest);
 set_decode_opts(State, [_ | _] = Rest) ->
     erlang:error(badarg, [State, Rest]);
 set_decode_opts(State, []) ->

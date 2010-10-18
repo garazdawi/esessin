@@ -41,9 +41,6 @@ simple_decode(Exp, Method) ->
     ?assertEqual(Exp, stq:method(O)),
     ?assertEqual(<<"sip:lukas@localhost">>, stq:uri(O)),
     ?assertEqual({1,0}, stq:vsn(O)),
-    ?assertEqual(['Content-Type','Content-Length'], stq:header_fields(O)),
-    ?assertEqual([{'Content-Type',[{<<"application/sdp">>,undefined}]},
-                  {'Content-Length',[{<<"0">>,undefined}]}], stq:headers(O)),
     ?assertEqual(<<>>, stq:body(O)),
     ?assertEqual(<<>>, Rest).
 
@@ -59,9 +56,6 @@ more() ->
     ?assertEqual(invite, stq:method(O)),
     ?assertEqual(<<"sip:lukas@localhost">>, stq:uri(O)),
     ?assertEqual({1,0}, stq:vsn(O)),
-    ?assertEqual(['Content-Type','Content-Length'], stq:header_fields(O)),
-    ?assertEqual([{'Content-Type',[{<<"application/sdp">>,undefined}]},
-                  {'Content-Length',[{<<"0">>,undefined}]}], stq:headers(O)),
     ?assertEqual(<<>>, stq:body(O)),
     ?assertEqual(<<>>, Rest).
 
@@ -78,9 +72,6 @@ two_in_one() ->
     ?assertEqual(invite, stq:method(O)),
     ?assertEqual(<<"sip:lukas@localhost">>, stq:uri(O)),
     ?assertEqual({1,0}, stq:vsn(O)),
-    ?assertEqual(['Content-Type','Content-Length'], stq:header_fields(O)),
-    ?assertEqual([{'Content-Type',[{<<"application/sdp">>,undefined}]},
-                  {'Content-Length',[{<<"0">>,undefined}]}], stq:headers(O)),
 
     ?assertEqual(<<>>, stq:body(O)),
 
@@ -91,9 +82,6 @@ two_in_one() ->
     ?assertEqual(invite, stq:method(O1)),
     ?assertEqual(<<"sip:lukas@localhost">>, stq:uri(O1)),
     ?assertEqual({1,0}, stq:vsn(O1)),
-    ?assertEqual(['Content-Type','Content-Length'], stq:header_fields(O1)),
-    ?assertEqual([{'Content-Type',[{<<"application/sdp">>,undefined}]},
-                  {'Content-Length',[{<<"0">>,undefined}]}], stq:headers(O1)),
     ?assertEqual(<<>>, stq:body(O1)),
     ?assertEqual(<<>>, Rest1).
     
@@ -132,7 +120,7 @@ complex_invite() ->
 		 stq:header('Contact', O)),
     ?assertEqual([{<<"application/sdp">>,undefined}],
 		 stq:header('Content-Type', O)),
-    ?assertEqual([{<<"7">>,undefined}], stq:header('Content-Length', O)),
+    ?assertEqual([{7,undefined}], stq:header('Content-Length', O)),
 
     ?assertEqual([{'Via',[{<<"SIP/2.0/UDP pc33.atlanta.com;"
 			    "branch=z9hG4bK776asdhds">>,undefined}]},
@@ -145,7 +133,7 @@ complex_invite() ->
 		  {'Cseq',[{<<"314159 INVITE">>,undefined}]},
 		  {'Contact',[{<<"<sip:alice@pc33.atlanta.com>">>,undefined}]},
 		  {'Content-Type',[{<<"application/sdp">>,undefined}]},
-		  {'Content-Length',[{<<"7">>,undefined}]}],
+		  {'Content-Length',[{7,undefined}]}],
 		 stq:headers(O)),
 
     ?assertEqual(<<"Test: 1">>, stq:body(O)),
