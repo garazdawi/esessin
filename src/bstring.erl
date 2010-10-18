@@ -1,3 +1,4 @@
+%% -*- tab-width: 4;erlang-indent-level: 4;indent-tabs-mode: nil -*-
 %% @author Lukas Larsson <garazdawi@gmail.com>
 %% @copyright 2010
 

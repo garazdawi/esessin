@@ -1,3 +1,5 @@
+%% -*- tab-width: 4;erlang-indent-level: 4;indent-tabs-mode: nil -*-
+
 -module(test_esessin_header).
 
 -compile(export_all).
