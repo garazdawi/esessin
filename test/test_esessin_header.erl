@@ -126,7 +126,7 @@ simple_decode(Exp, Header) ->
     io:format("Opaque = ~p~n",[O]),
 
     ?assertEqual([Exp,'Content-Length'], stq:header_fields(O)),
-    ?assertEqual([{Exp,[{<<"0">>,undefined}]},
+    ?assertEqual([{Exp,[{{<<"0">>,[]},undefined}]},
                   {'Content-Length',[{0,undefined}]}], stq:headers(O)).
                        
 
@@ -139,7 +139,7 @@ line_no_decode_test() ->
     io:format("Opaque = ~p~n",[O]),
 
     ?assertEqual(['Via','Content-Length'], stq:header_fields(O)),
-    ?assertEqual([{'Via',[{<<"petter">>,10}]},
+    ?assertEqual([{'Via',[{{<<"petter">>,[]},10}]},
                   {'Content-Length',[{0,20}]}], stq:headers(O)).
 
 multi_value_test_() ->
@@ -158,7 +158,8 @@ same_line() ->
     io:format("Opaque = ~p~n",[O]),
 
     ?assertEqual(['Via','Content-Length'], stq:header_fields(O)),
-    ?assertEqual([{'Via',[{<<"petter">>,10},{<<"adam">>,11}]},
+    ?assertEqual([{'Via',[{{<<"petter">>,[]},10},
+			  {{<<"adam">>,[]},11}]},
                   {'Content-Length',[{0,20}]}], stq:headers(O)).
 
 different_line() ->
@@ -172,7 +173,8 @@ different_line() ->
     io:format("Opaque = ~p~n",[O]),
 
     ?assertEqual(['Via','Content-Length'], stq:header_fields(O)),
-    ?assertEqual([{'Via',[{<<"petter">>,10},{<<"adam">>,20}]},
+    ?assertEqual([{'Via',[{{<<"petter">>,[]},10},
+			  {{<<"adam">>,[]},20}]},
                   {'Content-Length',[{0,30}]}], stq:headers(O)).
 
 combined() ->
@@ -185,8 +187,9 @@ combined() ->
     io:format("Opaque = ~p~n",[O]),
 
     ?assertEqual(['Via','Content-Length'], stq:header_fields(O)),
-    ?assertEqual([{'Via',[{<<"petter">>,10},{<<"adam">>,11},
-			  {<<"lukas">>,20}]},
+    ?assertEqual([{'Via',[{{<<"petter">>,[]},10},
+			  {{<<"adam">>,[]},11},
+			  {{<<"lukas">>,[]},20}]},
                   {'Content-Length',[{0,30}]}], stq:headers(O)).
 
 combined_no_line_info() ->
@@ -199,8 +202,9 @@ combined_no_line_info() ->
     io:format("Opaque = ~p~n",[O]),
 
     ?assertEqual(['Via','Content-Length'], stq:header_fields(O)),
-    ?assertEqual([{'Via',[{<<"petter">>,undefined},{<<"adam">>,undefined},
-			  {<<"lukas">>,undefined}]},
+    ?assertEqual([{'Via',[{{<<"petter">>,[]},undefined},
+			  {{<<"adam">>,[]},undefined},
+			  {{<<"lukas">>,[]},undefined}]},
                   {'Content-Length',[{0,undefined}]}], stq:headers(O)).
 
 same_line_auth() ->
@@ -233,7 +237,8 @@ hh_overwrite() ->
     io:format("Opaque = ~p~n",[O]),
 
     ?assertEqual(['Via','Content-Length'], stq:header_fields(O)),
-    ?assertEqual([{'Via',[{"petter",10},{"adam",11},
+    ?assertEqual([{'Via',[{"petter",10},
+			  {"adam",11},
 			  {"lukas",20}]},
                   {'Content-Length',[{0,30}]}], stq:headers(O)).
 

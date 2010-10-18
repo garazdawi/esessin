@@ -7,9 +7,9 @@
 
 decode_test_() ->
      method_decode() ++
-      [fun more/0,
-       fun two_in_one/0,
-       fun complex_invite/0].
+      [{"more",fun more/0},
+       {"two in one", fun two_in_one/0},
+       {"complex invite",fun complex_invite/0}].
 
 decode_error_test_() ->
     [{Label, ?_test(parse_error(Value))}
@@ -99,7 +99,7 @@ complex_invite() ->
 		       "Contact: <sip:alice@pc33.atlanta.com>\n"
 		       "Content-Type: application/sdp\n"
 		       "Content-Length: 7\n\n"
-		       "Test: 1\n\n">>, []),
+		       "Test: 1\n\n">>, [{header_hooks, none}]),
     io:format("Opaque = ~p~n",[O]),
     ?assertEqual(invite,stq:method(O)),
     ?assertEqual(<<"sip:bob@biloxi.com">>,stq:uri(O)),

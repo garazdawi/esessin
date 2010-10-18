@@ -267,12 +267,17 @@ no_hooks() ->
 'Www-Authenticate'(Value) -> default_header(Value).
 
 -spec default_header(sip_header_value()) -> term().
-default_header(Value) ->
-    Value.
+default_header(HeaderValue) ->
+    [Value | Params] = binary:split(HeaderValue, <<";">>, [global]),
+    {Value, [parse_param(Param) || Param <- Params]}.
+    
 
 %% --------------------------------------------------------------------------
 %% Internal Decode Functions
 %% --------------------------------------------------------------------------
+parse_param(Param) ->
+    [Key, Value] = binary:split(Param, <<"=">>),
+    {Key, Value}.
 
 parse_value(Type, <<" ",Rest/binary>>, LnNo, Opaque, HeaderHooks) ->
     parse_value(Type, Rest, LnNo, Opaque, HeaderHooks);
