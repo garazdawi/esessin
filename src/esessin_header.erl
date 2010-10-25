@@ -277,18 +277,18 @@ default_header(HeaderValue) ->
 %% --------------------------------------------------------------------------
 parse_param(Param) ->
     [Key, Value] = binary:split(Param, <<"=">>),
-    {Key, Value}.
+    {bstring:strip(Key), bstring:strip(Value)}.
 
-parse_value(Type, <<" ",Rest/binary>>, LnNo, Opaque, HeaderHooks) ->
-    parse_value(Type, Rest, LnNo, Opaque, HeaderHooks);
 parse_value(Type, Value, LnNo, Opaque, HeaderHooks) ->
     Fun = try
-	      dict:fetch(Type, HeaderHooks)
-	  catch error:badarg ->
-		  dict:fetch(default, HeaderHooks)
-	  end,
-    stq:header(Type, Fun(Value), LnNo, Opaque).
+              dict:fetch(Type, HeaderHooks)
+          catch error:badarg ->
+                  dict:fetch(default, HeaderHooks)
+          end,
+    stq:header(Type, Fun(strip_tabcr(Value)), LnNo, Opaque).
 
+strip_tabcr(Binary) ->
+    bstring:strip(binary:replace(Binary,<<"\r\n\t">>, <<" ">>,[global])).
 
 incr(undefined) ->
     undefined;
