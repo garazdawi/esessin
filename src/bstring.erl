@@ -5,7 +5,7 @@
 -module(bstring).
 
 %% API
--export([to_lower/1, to_upper/1, to_integer/1]).
+-export([to_lower/1, to_upper/1, to_integer/1, strip/1, strip/2, strip/3]).
 
 %% -----------------------------------------------------------------------------
 %% API
@@ -35,3 +35,29 @@ to_upper(<<>>, Acc) ->
 -spec to_integer(binary()) -> integer().
 to_integer(Bin) ->
     list_to_integer(binary_to_list(Bin)).
+
+%% @doc See string:strip/1,2,3
+-spec strip(binary()) -> binary().
+strip(Binary) ->
+    strip(Binary, both).
+strip(Binary, Dir) ->
+    strip(Binary, Dir, $ ).
+strip(Binary, left, Char) ->
+    strip_int(Binary, [leading], Char, {<<>> , <<>>} );
+strip(Binary, right, Char) ->
+    strip_int(Binary, [trailing], Char, {<<>> , <<>>} );
+strip(Binary, both, Char) ->
+    strip_int(Binary, [leading, trailing], Char, {<<>> , <<>>}).
+
+strip_int(<<Char,Rest/binary>>, [leading|_Rest] = Operations, Char, Acc) ->
+    strip_int(Rest, Operations, Char, Acc);
+strip_int(Binary, [leading|Rest], Char, Acc) ->  
+    strip_int(Binary, Rest, Char, Acc );
+strip_int(<<Char,Binary/binary>>, [trailing|_Rest] = Operations, Char, {Tmp,Final}) ->
+    strip_int(Binary, Operations, Char, {<<Tmp/binary,Char>>,Final});
+strip_int(<<OtherChar,Binary/binary>>, [trailing|_Rest] = Operations, Char, {Tmp,Final}) ->
+    strip_int(Binary, Operations, Char, {<<>>, <<Final/binary, Tmp/binary, OtherChar>>});
+strip_int(<<>>, [trailing|Rest], Char, Acc) ->
+    strip_int(<<>>, Rest, Char, Acc);
+strip_int(Binary, [], _Char, {_,Final}) ->
+    <<Final/binary,Binary/binary>>.
