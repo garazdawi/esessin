@@ -76,8 +76,8 @@ parse_line(<<>>, _Opts) ->
     throw(could_not_parse);
 parse_line(Line, _Opts) ->
     case binary:split(Line, [<<" ">>,<<"\r">>],[global,trim]) of
-        [<<"sip",_/binary>> = Vsn, Code, Msg] ->
-            {sip_response, parse_vsn(Vsn), parse_code(Code), Msg};
+        [<<"sip",_/binary>> = Vsn, Code | Msg] when Msg =/= [] ->
+            {sip_response, parse_vsn(Vsn), parse_code(Code), flatten(Msg)};
         [Method, Uri, Vsn] ->
             {sip_request, parse_method(Method), parse_uri(Uri), parse_vsn(Vsn)};
         _Else ->
@@ -100,6 +100,12 @@ parse_method(<<"register">>) ->
 parse_method(Method) ->
     Method.
 
+flatten(List) ->
+    flatten(List,<<>>).
+flatten([H],Acc) ->
+    <<Acc/binary, H/binary>>;
+flatten([H|T],Acc) ->
+    flatten(T,<<Acc/binary,H/binary," ">>).
 
 parse_vsn(<<"sip/", Vsn/binary>>) ->
     case binary:split(Vsn, <<".">>,[global]) of
